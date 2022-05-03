@@ -1,5 +1,5 @@
 ---
-title: StyleGAN Human
+title: StyleGAN-Human
 emoji: 🌍
 colorFrom: purple
 colorTo: yellow
