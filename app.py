@@ -75,8 +75,6 @@ def load_model(file_name: str, device: torch.device) -> nn.Module:
 
 
 def main():
-    gr.close_all()
-
     args = parse_args()
     device = torch.device(args.device)
 
