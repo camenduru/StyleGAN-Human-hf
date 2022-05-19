@@ -23,7 +23,7 @@ Expected execution time on Hugging Face Spaces: 0.8s
 
 Related App: [StyleGAN-Human (Interpolation)](https://huggingface.co/spaces/hysts/StyleGAN-Human-Interpolation)
 '''
-ARTICLE = None
+ARTICLE = '<center><img src="https://visitor-badge.glitch.me/badge?page_id=hysts.stylegan-human" alt="visitor badge"/></center>'
 
 TOKEN = os.environ['TOKEN']
 
