@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import functools
 import os
 import pickle
@@ -19,27 +18,10 @@ sys.path.insert(0, 'StyleGAN-Human')
 TITLE = 'StyleGAN-Human'
 DESCRIPTION = '''This is an unofficial demo for https://github.com/stylegan-human/StyleGAN-Human.
 
-Expected execution time on Hugging Face Spaces: 0.8s
-
 Related App: [StyleGAN-Human (Interpolation)](https://huggingface.co/spaces/hysts/StyleGAN-Human-Interpolation)
 '''
-ARTICLE = '<center><img src="https://visitor-badge.glitch.me/badge?page_id=hysts.stylegan-human" alt="visitor badge"/></center>'
 
-TOKEN = os.environ['TOKEN']
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--device', type=str, default='cpu')
-    parser.add_argument('--theme', type=str)
-    parser.add_argument('--live', action='store_true')
-    parser.add_argument('--share', action='store_true')
-    parser.add_argument('--port', type=int)
-    parser.add_argument('--disable-queue',
-                        dest='enable_queue',
-                        action='store_false')
-    parser.add_argument('--allow-flagging', type=str, default='never')
-    return parser.parse_args()
+HF_TOKEN = os.getenv('HF_TOKEN')
 
 
 def generate_z(z_dim: int, seed: int, device: torch.device) -> torch.Tensor:
@@ -63,7 +45,7 @@ def generate_image(seed: int, truncation_psi: float, model: nn.Module,
 def load_model(file_name: str, device: torch.device) -> nn.Module:
     path = hf_hub_download('hysts/StyleGAN-Human',
                            f'models/{file_name}',
-                           use_auth_token=TOKEN)
+                           use_auth_token=HF_TOKEN)
     with open(path, 'rb') as f:
         model = pickle.load(f)['G_ema']
     model.eval()
@@ -75,35 +57,21 @@ def load_model(file_name: str, device: torch.device) -> nn.Module:
     return model
 
 
-def main():
-    args = parse_args()
-    device = torch.device(args.device)
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+model = load_model('stylegan_human_v2_1024.pkl', device)
+func = functools.partial(generate_image, model=model, device=device)
 
-    model = load_model('stylegan_human_v2_1024.pkl', device)
-
-    func = functools.partial(generate_image, model=model, device=device)
-    func = functools.update_wrapper(func, generate_image)
-
-    gr.Interface(
-        func,
-        [
-            gr.inputs.Number(default=0, label='Seed'),
-            gr.inputs.Slider(
-                0, 2, step=0.05, default=0.7, label='Truncation psi'),
-        ],
-        gr.outputs.Image(type='numpy', label='Output'),
-        title=TITLE,
-        description=DESCRIPTION,
-        article=ARTICLE,
-        theme=args.theme,
-        allow_flagging=args.allow_flagging,
-        live=args.live,
-    ).launch(
-        enable_queue=args.enable_queue,
-        server_port=args.port,
-        share=args.share,
-    )
-
-
-if __name__ == '__main__':
-    main()
+gr.Interface(
+    fn=func,
+    inputs=[
+        gr.Slider(label='Seed', minimum=0, maximum=100000, step=1, value=0),
+        gr.Slider(label='Truncation psi',
+                  minimum=0,
+                  maximum=2,
+                  step=0.05,
+                  value=0.7),
+    ],
+    outputs=gr.Image(label='Output', type='numpy'),
+    title=TITLE,
+    description=DESCRIPTION,
+).launch(show_api=False)
