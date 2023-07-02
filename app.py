@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import functools
-import os
 import pickle
 import sys
 
@@ -16,12 +15,7 @@ from huggingface_hub import hf_hub_download
 sys.path.insert(0, 'StyleGAN-Human')
 
 TITLE = 'StyleGAN-Human'
-DESCRIPTION = '''This is an unofficial demo for https://github.com/stylegan-human/StyleGAN-Human.
-
-Related App: [StyleGAN-Human (Interpolation)](https://huggingface.co/spaces/hysts/StyleGAN-Human-Interpolation)
-'''
-
-HF_TOKEN = os.getenv('HF_TOKEN')
+DESCRIPTION = 'https://github.com/stylegan-human/StyleGAN-Human'
 
 
 def generate_z(z_dim: int, seed: int, device: torch.device) -> torch.Tensor:
@@ -43,9 +37,7 @@ def generate_image(seed: int, truncation_psi: float, model: nn.Module,
 
 
 def load_model(file_name: str, device: torch.device) -> nn.Module:
-    path = hf_hub_download('hysts/StyleGAN-Human',
-                           f'models/{file_name}',
-                           use_auth_token=HF_TOKEN)
+    path = hf_hub_download('public-data/StyleGAN-Human', f'models/{file_name}')
     with open(path, 'rb') as f:
         model = pickle.load(f)['G_ema']
     model.eval()
@@ -59,10 +51,10 @@ def load_model(file_name: str, device: torch.device) -> nn.Module:
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 model = load_model('stylegan_human_v2_1024.pkl', device)
-func = functools.partial(generate_image, model=model, device=device)
+fn = functools.partial(generate_image, model=model, device=device)
 
 gr.Interface(
-    fn=func,
+    fn=fn,
     inputs=[
         gr.Slider(label='Seed', minimum=0, maximum=100000, step=1, value=0),
         gr.Slider(label='Truncation psi',
@@ -74,4 +66,4 @@ gr.Interface(
     outputs=gr.Image(label='Output', type='numpy'),
     title=TITLE,
     description=DESCRIPTION,
-).launch(show_api=False)
+).queue(max_size=10).launch()
